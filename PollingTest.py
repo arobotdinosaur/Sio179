@@ -2,12 +2,14 @@ import serial
 import time
 
 # Open serial port
-ser = serial.Serial('/dev/tty.usbserial-B000W7YW', 9600, timeout=1)  # Replace with correct port
+ser = serial.Serial('/dev/tty.usbserial-B000VAYU', 9600, timeout=1)  # Replace with correct port
 
 def send_command(command):
-    #ser.write((command + '\r\n').encode())  # Send the command
+    #ser.write((command + '\r\n').encode())  # Send the command 
+    ser.flushInput()
+    ser.flushOutput()
     ser.write(command.encode())
-    time.sleep(1)  # Wait for response
+    time.sleep(0.25)  # Wait for response
     response = ser.read_all().decode()  # Read the response
     print(response)
 
