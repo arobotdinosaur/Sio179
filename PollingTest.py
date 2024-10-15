@@ -5,7 +5,7 @@ import time
 ser = serial.Serial('/dev/tty.usbserial-B000VAYU', 9600, timeout=1)  # Replace with correct port
 
 def send_command(command):
-    #ser.write((command + '\r\n').encode())  # Send the command 
+    ser.write((command + '\r\n').encode())  # Send the command 
     ser.flushInput()
     ser.flushOutput()
     ser.write(command.encode())
