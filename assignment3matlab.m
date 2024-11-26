@@ -22,6 +22,18 @@ g = -9.905848e-01;
 h = 1.371969e-01;
 i = -1.679558e-04;
 j = 3.014210e-05;
+
+%{
+a0 = 7.365386e-005;
+a1 = 2.991999e-004;
+a2 = 3.854375e-006;
+a3 = 1.859712e-007;
+%%conductivity sensor factory calibration coefficients
+g = -9.905848e-01;
+h = 1.371969e-01;
+i = -1.679558e-04;
+j = 3.014210e-05;
+%}
 CPcor = -9.5700e-8;
 CTcor = 3.2500e-6;
 WBOTC = 0e0;
@@ -48,10 +60,14 @@ j_ = 3.014210e-05;
 % j_ = j;
 % calibration data measured
 temp_std = [5,10,11.6,15,19.79]; %bath temp for thermistor cal (C)
-therm_raw = []; %thermistor output
+
+therm_raw = [477800, 385300, 359200, 313700, 256300]; %thermistor output
+
 tc = temp_std; %bath temp for cond cal (C)
-SP = [31.5434, 31.4018, 31.5547, 31.2121, 31.4284]; %practical salinity, measured independently (e.g. salinometer)
+SP = [31.5434, 31.4018, 31.5547, 31.2121, 31.4284];%practical salinity, measured independently (e.g. salinometer)
+
 InstFreq = [5425.348,5703.180,5768.961,5963.699,6241.609]; %frequency output of sensor (Hz)
+
 p=0; % pressure
 for x = 1:length(tc)
 f(x) = InstFreq(x)*sqrt(1+WBOTC*tc(x))/1000; % temp corr kHz
@@ -63,11 +79,22 @@ end
 %IC is instrument (SBE37) conductivity
 %using cal sheet convention, first measurement in array is in air or at
 %zero cond, so set zero point accordingly...
-BC(1) = 0; %set known cond (BC) to 0 for first datapoint (in air)
-IC1(1) = 0; % set Instrument Conductivity (IC) to 0 at at first datapoint
-IC2(1) = 0; %
+%BC(1) = 0; %set known cond (BC) to 0 for first datapoint (in air)
+%IC1(1) = 0; % set Instrument Conductivity (IC) to 0 at at first datapoint
+%IC2(1) = 0; %
 % fit thermistor calibration data
-s = fitoptions('Method','NonlinearLeastSquares','TolFun',1e-12,'TolX',1e-15,'MaxFunEvals',10000,'MaxIter',10000,'DiffMinChange',1e-12,'DiffMaxChange',1e-3,'Display','iter','Lower',[-.001,0,-.001,0],'Upper',[0,.001,0,.001],'Startpoint',[a0_,a1_,a2_,a3_]);
+%s = fitoptions('Method','NonlinearLeastSquares','TolFun',1e-12,'TolX',1e-15,'MaxFunEvals',10000,'MaxIter',10000,'DiffMinChange',1e-12,'DiffMaxChange',1e-3,'Display','iter','Lower',[-.001,0,-.001,0],'Upper',[0,.001,0,.001],'Startpoint',[a0_,a1_,a2_,a3_]);
+s = fitoptions('Method','NonlinearLeastSquares',... 
+               'TolFun',1e-12,...
+               'TolX',1e-15,...
+               'MaxFunEvals',10000,...
+               'MaxIter',10000,...
+               'DiffMinChange',1e-12,...
+               'DiffMaxChange',1e-3,...
+               'Display','iter',...
+               'Lower',[-.001,0,-.001,0],...
+               'Upper',[0,.001,0,.001],...
+               'Startpoint',[a0_,a1_,a2_,a3_]);
 X = fittype('1/(a+b*log(x)+c*log(x)^2+d*log(x)^3)-273.15','coefficients',{'a','b','c','d'},'independent','x','options',s);
 [c,gof] = fit(therm_raw',temp_std',X);
 coeffs = coeffvalues(c);
@@ -103,7 +130,7 @@ IT1(x) = 1/(a0+a1*log(therm_raw(x))+a2*log(therm_raw(x))^2+a3*log(therm_raw(x))^
 IT2(x) = 1/(a0_+a1_*log(therm_raw(x))+a2_*log(therm_raw(x))^2+a3_*log(therm_raw(x))^3)-273.15;
 end
 %calculate Instrument Conductivity (x starts at 2 due to in-air meas)
-for x=2:length(tc)
+for x=1:length(tc)
 IC1(x) = (g+h*f(x)^2+i*f(x)^3+j*f(x)^4)/(1 + CTcor*tc(x) + CPcor*p);
 IC2(x) = (g_+h_*f(x)^2+i_*f(x)^3+j_*f(x)^4)/(1 + CTcor*tc(x) + CPcor*p);
 end
@@ -126,7 +153,7 @@ subplot(2,1,2)
 plot(therm_raw,Tresid1,'o','MarkerEdgeColor','b','MarkerSize',10)
 hold on
 plot(therm_raw,Tresid2,'x','MarkerEdgeColor','r','MarkerSize',10);
-axis([1e5 7e5 -0.01 0.01])
+%axis([1e5 7e5 -0.01 0.01])
 grid on
 xlabel('thermistor response')
 ylabel('temperature residual T/C')
@@ -150,7 +177,7 @@ subplot(2,1,2)
 plot(f,Cresid1,'o','MarkerEdgeColor','b','MarkerSize',10)
 hold on
 plot(f,Cresid2,'x','MarkerEdgeColor','r','MarkerSize',10);
-axis([2.5 7 -0.0001 0.0001])
+%axis([2.5 7 -0.0001 0.0001])
 grid on
 xlabel('frequency (kHz)')
 ylabel('conductivity residual (S/m)')
